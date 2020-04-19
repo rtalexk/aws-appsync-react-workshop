@@ -8,6 +8,7 @@ import { v4 as uuid } from 'uuid';
 
 import { listTalks as ListTalks } from './graphql/queries';
 import { createTalk as CreateTalk } from './graphql/mutations';
+import { onCreateTalk as OnCreateTalk } from './graphql/subscriptions';
 
 const CLIENT_ID = uuid();
 
@@ -30,6 +31,9 @@ function reducer(state, action) {
     case 'CLEAR_INPUT':
       return { ...initialState, talks: state.talks };
 
+    case 'ADD_TALK':
+      return { ...state, talks: [...state.talks, action.talk] };
+
     default:
       return state;
   }
@@ -40,6 +44,15 @@ function App() {
 
   useEffect(() => {
     listTalks();
+
+    const subscription = API.graphql(graphqlOperation(OnCreateTalk)).subscribe({
+      next: eventData => {
+        const talk = eventData.value.data.onCreateTalk;
+        dispatch({ type: 'ADD_TALK', talk });
+      },
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   async function listTalks() {
@@ -61,9 +74,6 @@ function App() {
     }
 
     const talk = { clientId: CLIENT_ID, description, name, speakerBio, speakerName };
-
-    dispatch({ type: 'SET_TALKS', talks: [...state.talks, talk] });
-    dispatch({ type: 'CLEAR_INPUT' });
 
     try {
       await API.graphql(graphqlOperation(CreateTalk, { input: talk }));
