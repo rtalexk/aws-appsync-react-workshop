@@ -1,24 +1,40 @@
-import React from 'react';
-import logo from './logo.svg';
 import './App.css';
 
+import React, { useEffect, useState } from 'react';
+
+import { API, graphqlOperation } from 'aws-amplify';
+
+import { listTalks } from './graphql/queries';
+
 function App() {
+  const [talks, setTalks] = useState([]);
+
+  useEffect(() => {
+    getData();
+  }, []);
+
+  async function getData() {
+    try {
+      const talksData = await API.graphql(graphqlOperation(listTalks));
+      console.log(talksData);
+      setTalks(talksData.data.listTalks.items);
+    } catch (error) {
+      console.log('Error fetching talks');
+      console.log(error);
+    }
+  }
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div className="app-container">
+      <div className="talks">
+        {talks.map(talk => (
+          <div className="talk" key={talk.key}>
+            <h3>{ talk.speakerName }</h3>
+            <h5>{ talk.name }</h5>
+            <p>{ talk.description }</p>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
